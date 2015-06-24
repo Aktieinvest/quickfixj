@@ -42,6 +42,16 @@ abstract class AbstractDateTimeConverter {
             }
         }
     }
+    
+    protected static void assertDigitSequence(String value, int start, String type)
+            throws FieldConvertError {
+    	/* assert all chars are digits after the start index */
+        for (int offset = start; offset < value.length(); offset++) {
+            if (!Character.isDigit(value.charAt(offset))) {
+                throwFieldConvertError(value, type);
+            }
+        }
+    }
 
     protected static void assertSeparator(String value, int offset, char ch, String type)
             throws FieldConvertError {

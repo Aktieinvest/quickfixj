@@ -76,8 +76,16 @@ public class UtcTimestampConverter extends AbstractDateTimeConverter {
         long timeOffset = (parseLong(value.substring(9, 11)) * 3600000L)
                 + (parseLong(value.substring(12, 14)) * 60000L)
                 + (parseLong(value.substring(15, 17)) * 1000L);
-        if (value.length() == 21) {
-            timeOffset += parseLong(value.substring(18, 21));
+        // If the time precision is greater than millisecond, accept it anyway and truncate.
+        // Deviation from standard.
+        //if (value.length() == 21) {
+        //  timeOffset += parseLong(value.substring(18, 21));
+        //}
+        if (value.length() > 17) {
+        	// we have validated that there are at least 21 characters, 
+        	// and than characters on position 18 and above are all digits.
+        	// Truncate all digits with greater precision than millis.
+        	timeOffset += parseLong(value.substring(18, 21));
         }
         return new Date(getMillisForDay(value) + timeOffset);
     }
@@ -100,7 +108,10 @@ public class UtcTimestampConverter extends AbstractDateTimeConverter {
 
     private static void verifyFormat(String value) throws FieldConvertError {
         String type = "timestamp";
-        if (value.length() != 17 && value.length() != 21) {
+        // If the time precision is greater than millisecond, accept it anyway. 
+        // Deviation from standard.
+        //if (value.length() != 17 && value.length() != 21) {
+        if(value.length() < 17) { // there must be at least 17 characters (timestamp with second)
             throwFieldConvertError(value, type);
         }
         assertDigitSequence(value, 0, 8, type);
@@ -110,11 +121,18 @@ public class UtcTimestampConverter extends AbstractDateTimeConverter {
         assertDigitSequence(value, 12, 14, type);
         assertSeparator(value, 14, ':', type);
         assertDigitSequence(value, 15, 17, type);
-        if (value.length() == 21) {
-            assertSeparator(value, 17, '.', type);
-            assertDigitSequence(value, 18, 21, type);
-        } else if (value.length() != 17) {
-            throwFieldConvertError(value, type);
+        if(value.length() > 17) {
+        	assertSeparator(value, 17, '.', type);
+        	if(value.length() < 21) { // if less than 21, then we have to few millisecond digits.
+        		throwFieldConvertError(value, type);
+        	}
+          	assertDigitSequence(value, 18, type);
         }
+//        if (value.length() == 21) {
+//            assertSeparator(value, 17, '.', type);
+//            assertDigitSequence(value, 18, 21, type);
+//        } else if (value.length() != 17) {
+//            throwFieldConvertError(value, type);
+//        }
     }
 }

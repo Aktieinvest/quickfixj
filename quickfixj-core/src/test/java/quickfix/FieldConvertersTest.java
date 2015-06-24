@@ -181,6 +181,13 @@ public class FieldConvertersTest extends TestCase {
         assertEquals(2000, c.get(Calendar.YEAR));
         assertEquals(3, c.get(Calendar.MONTH));
         assertEquals(26, c.get(Calendar.DAY_OF_MONTH));
+        
+        try {
+            UtcTimestampConverter.convert("20000426-12:05:06.55"); // 20 characters should fail (need 21 for millis)
+            fail();
+        } catch (FieldConvertError e) {
+            // expected
+        }        
         try {
             UtcTimestampConverter.convert("2000042x-12:05:06.555");
             fail();
@@ -211,6 +218,27 @@ public class FieldConvertersTest extends TestCase {
         } catch (FieldConvertError e) {
             // expected
         }
+
+        // Instead of failing for extra fractions after millis, we want to continue (deviation from the standard).
+        // We will truncate for now, in the future the fix standard might get updated to the ISO 8601 (no limit on sub second digits). 
+
+        date = UtcTimestampConverter.convert("20000426-12:05:06.555999999999"); // nanosecond precision
+        c.setTime(date);
+        assertEquals(12, c.get(Calendar.HOUR_OF_DAY));
+        assertEquals(5, c.get(Calendar.MINUTE));
+        assertEquals(6, c.get(Calendar.SECOND));
+        assertEquals(555, c.get(Calendar.MILLISECOND)); // 555 not 556, no rounding!
+        assertEquals(2000, c.get(Calendar.YEAR));
+        assertEquals(3, c.get(Calendar.MONTH));
+        assertEquals(26, c.get(Calendar.DAY_OF_MONTH));
+        
+        try {
+            UtcTimestampConverter.convert("20000426-12:05:06555999999999999999999999999999A"); // late non-digit
+            fail();
+        } catch (FieldConvertError e) {
+            // expected
+        }
+
     }
 
     public void testUtcTimeOnlyConversion() throws Exception {
